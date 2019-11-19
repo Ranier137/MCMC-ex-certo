@@ -146,10 +146,39 @@ for i in range(iterations): #iteração i
     chain_w.append(xi[1])
     
 #após todas as iterações cálculo do valor médio    
-ValorMM = sum(chain_m)/len(chain_m)
-ValorMDE = sum(chain_w)/len(chain_w)
+n = len(chain_m)
+n1 = len(chain_m)
+n2 = len(chain_w)
+print(f'numero de chain m e chainw: {n1} {n2} \n\n')
+ValorMM = sum(chain_m)/n
+ValorMw = sum(chain_w)/n
 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMDE}')
+cov = np.zeros([2,2])
+a = cov[0,0] = sum((chain_m-ValorMM)**2)/(n-1)
+b = cov[0,1]= cov[1,0] = sum((chain_m-ValorMM)*(chain_w-ValorMw))/(n-1)
+c = cov[1,1] = sum((chain_w-ValorMw)**2)/(n-1)
+
+sigx = np.sqrt(cov[0,0])
+sigy = np.sqrt(cov[1,1])
+Lx = (a+c)/2.0 + np.sqrt(((a-c)/2)**2 + b**2)
+Ly = (a+c)/2.0 - np.sqrt(((a-c)/2)**2 + b**2)
+Theta = -(57.2958)*np.arctan(np.sqrt((Lx-a)/Ly)) 
+print('esse é o angulo', Theta, '\n\n' )
+
+s1 = -2*np.log(1.0-0.9)
+rx1 = np.sqrt(s1*Lx)
+ry1 = np.sqrt(s1*Ly)
+
+s2 = -2*np.log(1.0-0.68)
+rx2 = np.sqrt(s2*Lx)
+ry2 = np.sqrt(s2*Ly)
+
+
+
+
+
+
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw}')
 
 #plotar os histogramas
 plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')
@@ -157,9 +186,23 @@ plt.hist(chain_w, bins = 100, label= 'w', color= 'red')
 plt.legend()
 plt.show()
 
+
+
 #pontos percorridos no espaço de parâmetros
+
+
+plt.rcParams['legend.fontsize'] = 10
+fig = plt.figure()
+ax = fig.gca()
 plt.scatter(chain_mrej, chain_wrej, marker='x',color='y',linewidths=1) # recusados em amarelo (yellow)
 plt.scatter(chain_m, chain_w,marker='.',color='b',linewidths=3)# aceitos em azul (blue)
+phi = np.linspace(0.0, 2*np.pi, 100)
+x1 = rx1*np.cos(Theta)*np.cos(phi) - ry1*np.sin(Theta)*np.sin(phi) + ValorMM
+y1 = rx1*np.sin(Theta)*np.cos(phi) + ry1*np.cos(Theta)*np.sin(phi) + ValorMw
+x2 = rx2*np.cos(Theta)*np.cos(phi) - ry2*np.sin(Theta)*np.sin(phi) + ValorMM
+y2 = rx2*np.sin(Theta)*np.cos(phi) + ry2*np.cos(Theta)*np.sin(phi) + ValorMw
+ax.plot(x1, y1, color = 'blue', label = '90')
+ax.plot(x2, y2, color='red', label = '68')
 plt.xlabel('OM_m')
 plt.ylabel('w')
 plt.show()
