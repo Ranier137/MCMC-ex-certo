@@ -4,7 +4,7 @@ import CDM
 import matplotlib.pyplot as plt
 from decimal import Decimal
 
-#o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, w].
+#o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, OM_DE].
 
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
@@ -14,9 +14,7 @@ Transition = lambda x: [np.random.normal(x[0], 0.05), np.random.normal(x[1], 0.0
     
 def prior(x):
 # coloquei aqui a informaçao de que a probabilidade deve se anular caso algum dos parametros se anule ou se torne negativo.
-	if x[0]<= 0.: 
-		return 0.0
-	if x[1] > 0.0:
+	if x[0]<=0. or x[1] <= 0.: 
 		return 0.0
 	#k = abs(1 - x[0] - x[1])
 	#if k > 0.1:
@@ -30,7 +28,7 @@ def prior(x):
 def LnLike(x,data1, data2,sig = 0.4): 
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
-    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], 1.0-x[0], x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], x[1], -1.) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -106,7 +104,7 @@ while i < len(coloumn0):
 
 #chute inicial dos parâmetros para a cadeia
 param_init0 = float(input(print('digite um chute inicial para Omega_m: \n'))) 
-param_init1 = float(input(print('digite um chute inicial para w: \n')))
+param_init1 = float(input(print('digite um chute inicial para Omeda_DE: \n')))
 iterations = int(input(print('digite o numero de iterações: \n')))    
 sig = 0.4
 
@@ -115,10 +113,10 @@ sig = 0.4
 xi = np.array([param_init0, param_init1])    #ponto inicial da cadeia
 #lista com os valores aceitos dos parâmetros. Inicialmente há apenas um valor
 chain_m = [xi[0]]	
-chain_w = [xi[1]]
+chain_DE = [xi[1]]
 #lista de valores sorteados para os parâmetros porém rejeitados 
 chain_mrej = []
-chain_wrej = []
+chain_DErej = []
 accepted = [0] #numeros de sorteios aceitados
 rejected = [0] #numeros de sorteios rejeitados
 
@@ -136,25 +134,25 @@ for i in range(iterations): #iteração i
 	
 	# insere na lista dos recusados xp
         chain_mrej.append(xp[0]) 
-        chain_wrej.append(xp[1])
+        chain_DErej.append(xp[1])
 
     print(' true: ', accepted, '\n\n')
     print(' false: ', rejected, '\n\n')
 
 #acrescenta os valores atualizados à cadeia.
     chain_m.append(xi[0])
-    chain_w.append(xi[1])
+    chain_DE.append(xi[1])
     
 #após todas as iterações cálculo do valor médio    
 n = len(chain_m)
 ValorMM = sum(chain_m)/n
-ValorMw = sum(chain_w)/n
+ValorMDE = sum(chain_DE)/n
 
 #montando a matrix covariancia dos parâmetros
 cov = np.zeros([2,2])
 a = cov[0,0] = sum((chain_m-ValorMM)**2)/(n-1)
-b = cov[0,1]= cov[1,0] = sum((chain_m-ValorMM)*(chain_w-ValorMw))/(n-1)
-c = cov[1,1] = sum((chain_w-ValorMw)**2)/(n-1)
+b = cov[0,1]= cov[1,0] = sum((chain_m-ValorMM)*(chain_DE-ValorMDE))/(n-1)
+c = cov[1,1] = sum((chain_DE-ValorMDE)**2)/(n-1)
 
 #definindo desvio padrão
 sigx = np.sqrt(cov[0,0])
@@ -163,9 +161,8 @@ sigy = np.sqrt(cov[1,1])
 #Os eixos da elipse de confianca
 Lx = (a+c)/2.0 + np.sqrt(((a-c)/2)**2 + b**2)
 Ly = (a+c)/2.0 - np.sqrt(((a-c)/2)**2 + b**2)
-#Theta = (57.2958)*np.arctan(np.sqrt((Lx-a)/Ly))
 Theta = np.arctan((Lx-a)/b) 
-print('esse é o angulo', Theta, '\n\n' )
+print('esse é o angulo', Theta, 'em radianos \n\n' )
 
 #95% de confianca
 s1 = -2*np.log(1.0-0.95)
@@ -183,11 +180,11 @@ ry2 = np.sqrt(s2*Ly)
 
 
 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw}')
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, OM_DE = {ValorMDE}')
 
 #plotar os histogramas
 plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')
-plt.hist(chain_w, bins = 100, label= 'w', color= 'red')
+plt.hist(chain_DE, bins = 100, label= 'OM_DE', color= 'red')
 plt.legend()
 plt.show()
 
@@ -199,22 +196,22 @@ plt.show()
 plt.rcParams['legend.fontsize'] = 10
 fig = plt.figure()
 ax = fig.gca()
-plt.scatter(chain_mrej, chain_wrej, marker='x',color='y',linewidths=1) # recusados em amarelo (yellow)
-plt.scatter(chain_m, chain_w,marker='.',color='b',linewidths=3)# aceitos em azul (blue)
-plt.scatter(ValorMM, ValorMw,marker='.',color='r',linewidths=3)# valor medio em vermelho 
+plt.scatter(chain_mrej, chain_DErej, marker='x',color='y',linewidths=1) # recusados em amarelo (yellow)
+plt.scatter(chain_m, chain_DE,marker='.',color='b',linewidths=3)# aceitos em azul (blue)
+plt.scatter(ValorMM, ValorMDE ,marker='.',color='r',linewidths=3)# valor medio em vermelho 
 phi = np.linspace(0.0, 2*np.pi, 100)
 #elipse 95
 x1 = rx1*np.cos(Theta)*np.cos(phi) - ry1*np.sin(Theta)*np.sin(phi) + ValorMM
-y1 = rx1*np.sin(Theta)*np.cos(phi) + ry1*np.cos(Theta)*np.sin(phi) + ValorMw
+y1 = rx1*np.sin(Theta)*np.cos(phi) + ry1*np.cos(Theta)*np.sin(phi) + ValorMDE
 
 #elipse 68
 x2 = rx2*np.cos(Theta)*np.cos(phi) - ry2*np.sin(Theta)*np.sin(phi) + ValorMM
-y2 = rx2*np.sin(Theta)*np.cos(phi) + ry2*np.cos(Theta)*np.sin(phi) + ValorMw
+y2 = rx2*np.sin(Theta)*np.cos(phi) + ry2*np.cos(Theta)*np.sin(phi) + ValorMDE
 
-ax.plot(x1, y1, color = 'blue', label = '95%')
+ax.plot(x1, y1, color = 'g', label = '95%')
 ax.plot(x2, y2, color='red', label = '68%')
 plt.xlabel('OM_m')
-plt.ylabel('w')
+plt.ylabel('OM_DE')
 plt.show()
 plt.title('Espaço de Parâmetros')
 		
