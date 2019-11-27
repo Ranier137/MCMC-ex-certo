@@ -3,12 +3,13 @@ import numpy as np
 import CDM 
 import matplotlib.pyplot as plt
 from decimal import Decimal
+import time
 
 #o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, OM_DE].
 
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
-Transition = lambda x: [np.random.normal(x[0], 0.05), np.random.normal(x[1], 0.05)]
+Transition = lambda x: [np.random.normal(x[0], 0.1), np.random.normal(x[1], 0.1)]
 
 #Definir a distribuiçao prior para cada calor dos parametros armazenado no vetor x
     
@@ -28,7 +29,8 @@ def prior(x):
 def LnLike(x,data1, data2,sig = 0.4): 
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
-    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], x[1], -1.) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    OM_k = 1.-x[0]-x[1]
+    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], x[1], OM_k, -1., 0.05) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -42,9 +44,11 @@ def LnLike(x,data1, data2,sig = 0.4):
 
 # comparar as probabilidades posterior do ponto atual e possível próximo ponto no espaço de parâmetros
 def Passo(xi,xp, data1, data2, sig, LnLike):
-    print('este é o xi atualmente: ',xi, '\n') 
+    OM_ki = 1.-xi[0]-xi[1]
+    print('este é o xi atualmente: ',xi, '\n e OM_k:', OM_ki, '\n') 
     LNi = LnLike(xi, data1, data2, sig) #LnLike do ponto inicial/atual xi
-    print('este é o xp sorteado: ',xp, '\n') 
+    OM_kp = 1.-xp[0]-xp[1]    
+    print('este é o xp sorteado: ',xp, '\n e OM_k:', OM_kp, '\n') 
     LNp = LnLike(xp, data1, data2, sig) #LnLike do possível ponto posterior xp
     alpha = np.random.uniform(0.,1.) #sorteio uniforme de um número entre 0 e 1.
     if LNp > LNi: #caso a probabilidade favorece o próximo ponto xp.
@@ -120,7 +124,7 @@ chain_DErej = []
 accepted = [0] #numeros de sorteios aceitados
 rejected = [0] #numeros de sorteios rejeitados
 
-
+ini = time.time()
 for i in range(iterations): #iteração i
     print('iteração ', i, '\n') #monitoramento da contagem   
     xp = Transition(xi) #sorteio de um novo ponto, xp, a partir do ponto atual xi
@@ -179,8 +183,10 @@ ry2 = np.sqrt(s2*Ly)
 
 
 
+fim = time.time()
+tempoT = (fim - ini)/60. 
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, OM_DE = {ValorMDE} \n e o tempo de execução total das iterações {tempoT}')
 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, OM_DE = {ValorMDE}')
 
 #plotar os histogramas
 plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')
@@ -191,7 +197,6 @@ plt.show()
 
 
 #pontos percorridos no espaço de parâmetros
-
 
 plt.rcParams['legend.fontsize'] = 10
 fig = plt.figure()
