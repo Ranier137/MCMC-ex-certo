@@ -30,7 +30,7 @@ def prior(x):
 def LnLike(x,data1, data2,sig = 0.4): 
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
-    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], 1.0-x[0], x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], 1.0-x[0], 0.0, x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	

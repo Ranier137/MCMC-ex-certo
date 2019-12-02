@@ -7,7 +7,7 @@ import numpy as np
 class LCDModel:
     
     #construtor das instâncias
-    def __init__(self, H0, c, OM_r, OM_m, OM_de, OM_k, w, tol):
+    def __init__(self, H0, c, OM_r, OM_m, OM_de, OM_k, w, tol = 0.0):
         self.H0 = H0
         self.c = c
         self.OM_m = abs(OM_m)
@@ -44,7 +44,7 @@ class LCDModel:
         if self.OM_k < -self.tol:
             #print('integra -')
             return (1+z)*(self.c/self.H0)*np.sin(self.I(z)*((abs(self.OM_k))**(0.5)))/((abs(self.OM_k))**(0.5))
-        if abs(self.OM_k) < self.tol:
+        if abs(self.OM_k) <= self.tol:
             #print('integra 0')
             return (1+z)*(self.c/self.H0)*self.I(z)
 
