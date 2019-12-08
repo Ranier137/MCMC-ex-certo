@@ -16,11 +16,8 @@ def prior(x):
 # coloquei aqui a informaçao de que a probabilidade deve se anular caso algum dos parametros se anule ou se torne negativo.
 	if x[0]<= 0.: 
 		return 0.0
-	if x[1] > 0.0:
+	if x[1] > -1./3.:
 		return 0.0
-	#k = abs(1 - x[0] - x[1])
-	#if k > 0.1:
-	#	return 0.0
 #usei prior uniforme. coloquei apenas 1.0 pq nao importa a constante de normalizaçao que deve aparecer, nao influenciara no metodo.	
 	else:
 		return 1.0
@@ -122,7 +119,7 @@ chain_wrej = []
 accepted = [0] #numeros de sorteios aceitados
 rejected = [0] #numeros de sorteios rejeitados
 
-
+ini = time.time()
 for i in range(iterations): #iteração i
     print('iteração ', i, '\n') #monitoramento da contagem   
     xp = Transition(xi) #sorteio de um novo ponto, xp, a partir do ponto atual xi
@@ -163,9 +160,8 @@ sigy = np.sqrt(cov[1,1])
 #Os eixos da elipse de confianca
 Lx = (a+c)/2.0 + np.sqrt(((a-c)/2)**2 + b**2)
 Ly = (a+c)/2.0 - np.sqrt(((a-c)/2)**2 + b**2)
-#Theta = (57.2958)*np.arctan(np.sqrt((Lx-a)/Ly))
 Theta = np.arctan((Lx-a)/b) 
-print('esse é o angulo', Theta, '\n\n' )
+print('esse é o angulo', Theta, 'em radianos \n\n' )
 
 #95% de confianca
 s1 = -2*np.log(1.0-0.95)
@@ -183,7 +179,9 @@ ry2 = np.sqrt(s2*Ly)
 
 
 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw}')
+fim = time.time()
+tempoT = (fim - ini)/60. 
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw} e o tempo de execução total das iterações {tempoT}')
 
 #plotar os histogramas
 plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')

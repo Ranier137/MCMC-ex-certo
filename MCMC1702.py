@@ -9,20 +9,19 @@ import time
 
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
-Transition = lambda x: [np.random.normal(x[0], 0.1), np.random.normal(x[1], 0.1)]
+Transition = lambda x: [np.random.normal(x[0], 0.05), np.random.normal(x[1], 0.05)]
 
 #Definir a distribuiçao prior para cada calor dos parametros armazenado no vetor x
     
 def prior(x):
 # coloquei aqui a informaçao de que a probabilidade deve se anular caso algum dos parametros se anule ou se torne negativo.
-	if x[0]<=0. or x[1] <= 0.: 
-		return 0.0
-	#k = abs(1 - x[0] - x[1])
-	#if k > 0.1:
-	#	return 0.0
+    if x[0]<=0. or x[1] <= 0.: 
+        return 0.0
+    #if x[0] > 1. or x[1] > 1.:
+     #   return 0.0
 #usei prior uniforme. coloquei apenas 1.0 pq nao importa a constante de normalizaçao que deve aparecer, nao influenciara no metodo.	
-	else:
-		return 1.0
+    else:
+        return 1.0
 
 # aqui devo defini o logaritmo da likelihood*prior
 #alem dos parmetros x, as entradas sao sig = 0.4 desvio padrao (assumindo covariancia diagonal) e dadaos representados por data1 = coluna dos redshifts e data2 = coluna das respectivas magnitude aparente.

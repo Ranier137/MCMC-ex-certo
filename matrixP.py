@@ -26,12 +26,14 @@ while i < len(redc):
 errornp = np.array(error)
 dim = len(errornp)
 
-C = np.zeros([dim,dim])
+Ce = np.zeros([dim,dim])
 
 i=0
 while i < dim:
-    C[i,i] = errornp[i]
+    Ce[i,i] = errornp[i]
     i = i +1
+
+C = Ce**2
 #print('C\n ', C)
 
 f1.close()
@@ -66,11 +68,23 @@ np.set_printoptions(threshold=1600)
 
 Ctot = C + Csys
 
+
 print('Ctot\n ',Ctot)
 
 
-'''
+Corr = np.zeros([dim,dim])
+i=0
+j=0
+while i < 40:
+    while j< 40:
+        Corr[i,j] = Ctot[i,j]/((Ctot[i,i]*Ctot[j,j])**(0.5)) 
+        j=j+1
+    j=0
+    i=i+1
 
+print('\n\nCorr\n', Corr)
+
+'''
 x = np.array(redc)    
 y = np.array(redl) 
 X, Y = np.meshgrid(x, y) 
@@ -90,11 +104,18 @@ X, Y = np.meshgrid(x, y)
 #print(np.meshgrid(x,y))
 
 Z = Ctot  
+W = Corr  
 
-plt.xlim(0.0, 1.6)
-plt.ylim(1.6, 0.0)
+plt.xlim(0.014, 1.6123)
+plt.ylim(1.6123, 0.014)
 plt.pcolormesh(X, Y, Z, cmap = cm.gray)
 plt.colorbar(label='scale') 
-plt.clim(0.001, -0.001)
+plt.clim(0.0015, -0.0015)
+plt.show()
+plt.xlim(0.014, 1.6123)
+plt.ylim(1.6123, 0.014)
+plt.pcolormesh(X, Y, W, cmap = cm.gray)
+plt.colorbar(label='scale') 
+plt.clim(1, -1)
 plt.show()
  
