@@ -3,6 +3,7 @@ import numpy as np
 import CDM 
 import matplotlib.pyplot as plt
 from decimal import Decimal
+import time
 
 #o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, w].
 
@@ -27,7 +28,7 @@ def prior(x):
 def LnLike(x,data1, data2,sig = 0.4): 
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
-    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], 1.0-x[0], 0.0, x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(68., 299792.4580, 0.0, x[0], 1.0-x[0], 0.0, x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -181,7 +182,7 @@ ry2 = np.sqrt(s2*Ly)
 
 fim = time.time()
 tempoT = (fim - ini)/60. 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw} e o tempo de execução total das iterações {tempoT}')
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw} e o tempo de execução total das iterações {tempoT} min')
 
 #plotar os histogramas
 plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')

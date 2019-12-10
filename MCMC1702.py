@@ -29,7 +29,7 @@ def LnLike(x,data1, data2,sig = 0.4):
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
     OM_k = 1.-x[0]-x[1]
-    M = CDM.LCDModel(72, 299792.4580, 0.002, x[0], x[1], OM_k, -1., 0.05) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(68., 299792.4580, 0.0, x[0], x[1], OM_k, -1., 0.05) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -65,7 +65,7 @@ def Passo(xi,xp, data1, data2, sig, LnLike):
     
 
 
-
+#______________________________________________________________________________________________________________________
 #IMPLEMENTAÇÃO DO MÉTODO MCMC
 
 
@@ -104,6 +104,7 @@ while i < len(coloumn0):
     data2[i] = np.array([float(coloumn1[i])])
     i=i+1
 
+#______________________________________________________________________________________________________________________
 
 #chute inicial dos parâmetros para a cadeia
 param_init0 = float(input(print('digite um chute inicial para Omega_m: \n'))) 
@@ -183,8 +184,9 @@ ry2 = np.sqrt(s2*Ly)
 
 
 fim = time.time()
+
 tempoT = (fim - ini)/60. 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, OM_DE = {ValorMDE} \n e o tempo de execução total das iterações {tempoT}')
+print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, OM_DE = {ValorMDE} \n e o tempo de execução total das iterações {tempoT} min')
 
 
 #plotar os histogramas
