@@ -9,7 +9,9 @@ import time
 
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
+
 Transition = lambda x: [np.random.normal(x[0], 0.05), np.random.normal(x[1], 0.05)]
+
 
 #Definir a distribuiçao prior para cada calor dos parametros armazenado no vetor x
     
@@ -49,12 +51,13 @@ def Passo(xi,xp, data1, data2, sig, LnLike):
     OM_kp = 1.-xp[0]-xp[1]    
     print('este é o xp sorteado: ',xp, '\n e OM_k:', OM_kp, '\n') 
     LNp = LnLike(xp, data1, data2, sig) #LnLike do possível ponto posterior xp
+    print('logaritmos, Lni, Lnp, diferença', LNi, '  ', LNp, '  ', LNp-LNi, '\n')
     alpha = np.random.uniform(0.,1.) #sorteio uniforme de um número entre 0 e 1.
     if LNp > LNi: #caso a probabilidade favorece o próximo ponto xp.
         print('Lnp > Lni \n')
         return 1 #retorna 1 caso aceito o próximo ponto xp
     else: #caso a probabilidade não favoreça xp, é necessário utilizar o sorteio de alpha.
-        r = np.exp(Decimal(LNp))/np.exp(Decimal(LNi)) #razão entre posterio de xp e posterior de xi
+        r = np.exp(LNp-LNi) #razão entre posterio de xp e posterior de xi
         print(f'Essa é a razão: {r}            Este o alpha: {alpha}\n') 
         if alpha < r: #critério de aceite do ponto xp
             print('alpha < r \n')
