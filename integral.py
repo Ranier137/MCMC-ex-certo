@@ -136,11 +136,11 @@ while i < 300:
 
 #pl.plot(Z, Dc, 'b.', label='DC')
 #pl.plot(Z, DA, 'r.', label='DA')
-pl.plot(Z, DL0, 'y.', label='DL0')
-pl.plot(Z, DL1, 'y.', label='DL1')
-pl.plot(Z, DL2, 'y.', label='DL2')
-#pl.plot(Z, MI, 'g.', label='MI')
-#pl.plot(data1, c, 'r.', label='MI')
+#pl.plot(Z, DL0, 'y.', label='DL0')
+#pl.plot(Z, DL1, 'y.', label='DL1')
+#pl.plot(Z, DL2, 'y.', label='DL2')
+pl.plot(Z, MI, 'g.', label='MI')
+pl.plot(data1, c, 'r.', label='MI')
 
 pl.legend(loc='upper left')
 pl.show()

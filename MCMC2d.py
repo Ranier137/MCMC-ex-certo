@@ -2,7 +2,6 @@ import math
 import numpy as np
 import CDM 
 import matplotlib.pyplot as plt
-from decimal import Decimal
 import time
 
 #o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, w].
@@ -28,7 +27,7 @@ def prior(x):
 def LnLike(x,data1, data2,sig = 0.4): 
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
-    M = CDM.LCDModel(68., 299792.4580, 0.0, x[0], 1.0-x[0], 0.0, x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(72., 299792.4580, 0.0, x[0], 1.0-x[0], 0.0, x[1]) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -51,7 +50,7 @@ def Passo(xi,xp, data1, data2, sig, LnLike):
         print('Lnp > Lni \n')
         return 1 #retorna 1 caso aceito o próximo ponto xp
     else: #caso a probabilidade não favoreça xp, é necessário utilizar o sorteio de alpha.
-        r = np.exp(Decimal(LNp))/np.exp(Decimal(LNi)) #razão entre posterio de xp e posterior de xi
+        r = np.exp(LNp-LNi) #razão entre posterio de xp e posterior de xi
         print(f'Essa é a razão: {r}            Este o alpha: {alpha}\n') 
         if alpha < r: #critério de aceite do ponto xp
             print('alpha < r \n')
@@ -144,15 +143,22 @@ for i in range(iterations): #iteração i
     chain_w.append(xi[1])
     
 #após todas as iterações cálculo do valor médio    
+
+
+dimension = len(chain_m)
+
+burn = int(0.1*dimension)
+del chain_m[0:burn]
+del chain_w[0:burn]
 n = len(chain_m)
 ValorMM = sum(chain_m)/n
 ValorMw = sum(chain_w)/n
 
 #montando a matrix covariancia dos parâmetros
 cov = np.zeros([2,2])
-a = cov[0,0] = sum((chain_m-ValorMM)**2)/(n-1)
-b = cov[0,1]= cov[1,0] = sum((chain_m-ValorMM)*(chain_w-ValorMw))/(n-1)
-c = cov[1,1] = sum((chain_w-ValorMw)**2)/(n-1)
+a = cov[0,0] = sum((np.array(chain_m)-ValorMM)**2)/(n-1)
+b = cov[0,1]= cov[1,0] = sum((np.array(chain_m)-ValorMM)*(np.array(chain_w)-ValorMw))/(n-1)
+c = cov[1,1] = sum((np.array(chain_w)-ValorMw)**2)/(n-1)
 
 #definindo desvio padrão
 sigx = np.sqrt(cov[0,0])
@@ -182,6 +188,8 @@ ry2 = np.sqrt(s2*Ly)
 
 fim = time.time()
 tempoT = (fim - ini)/60. 
+print('\n', n, '\n')
+    
 print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw} e o tempo de execução total das iterações {tempoT} min')
 
 #plotar os histogramas
@@ -193,8 +201,6 @@ plt.show()
 
 
 #pontos percorridos no espaço de parâmetros
-
-
 plt.rcParams['legend.fontsize'] = 10
 fig = plt.figure()
 ax = fig.gca()
@@ -218,7 +224,6 @@ plt.show()
 plt.title('Espaço de Parâmetros')
 		
 
-    
 '''
 talvez seja necessário para a prior:
 

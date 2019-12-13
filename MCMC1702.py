@@ -10,7 +10,7 @@ import time
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
 
-Transition = lambda x: [np.random.normal(x[0], 0.05), np.random.normal(x[1], 0.05)]
+Transition = lambda x: [np.random.normal(x[0], 0.08), np.random.normal(x[1], 0.08)]
 
 
 #Definir a distribuiçao prior para cada calor dos parametros armazenado no vetor x
@@ -31,7 +31,7 @@ def LnLike(x,data1, data2,sig = 0.4):
     d = len(data1) 		#número de dados coletados
     deltax = np.zeros(d)
     OM_k = 1.-x[0]-x[1]
-    M = CDM.LCDModel(68., 299792.4580, 0.0, x[0], x[1], OM_k, -1., 0.05) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    M = CDM.LCDModel(72., 299792.4580, 0.0, x[0], x[1], OM_k, -1., 0.0005) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     Mo = -19.3	#assumindo que todas as SNIa possuem magnitude absoluta iguais
     MI2 = np.zeros(len(data2))	
@@ -151,15 +151,23 @@ for i in range(iterations): #iteração i
     chain_DE.append(xi[1])
     
 #após todas as iterações cálculo do valor médio    
-n = len(chain_m)
+
+
+
+dimension = len(chain_m)
+print('\n\n\n',dimension,'\n\n\n')
+burn = int(0.2*dimension)
+del chain_m[0:burn]
+del chain_DE[0:burn]
+n = dimension - burn
 ValorMM = sum(chain_m)/n
 ValorMDE = sum(chain_DE)/n
 
 #montando a matrix covariancia dos parâmetros
 cov = np.zeros([2,2])
-a = cov[0,0] = sum((chain_m-ValorMM)**2)/(n-1)
-b = cov[0,1]= cov[1,0] = sum((chain_m-ValorMM)*(chain_DE-ValorMDE))/(n-1)
-c = cov[1,1] = sum((chain_DE-ValorMDE)**2)/(n-1)
+a = cov[0,0] = sum((np.array(chain_m)-ValorMM)**2)/(n-1)
+b = cov[0,1]= cov[1,0] = sum((np.array(chain_m)-ValorMM)*(np.array(chain_DE)-ValorMDE))/(n-1)
+c = cov[1,1] = sum((np.array(chain_DE)-ValorMDE)**2)/(n-1)
 
 #definindo desvio padrão
 sigx = np.sqrt(cov[0,0])
