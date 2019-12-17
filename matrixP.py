@@ -23,13 +23,13 @@ for line in l:
 
 
 
-print('aparente \n', mb)
+#print('aparente \n', mb)
 i = 0
 while i < len(redc):
     redl.append(redc[39-i])
     i=i+1
-#print(redc)
-#print(redl)
+#print('redc', redc)
+#print('redl', redl)
 errornp = np.array(error)
 dim = len(errornp)
 
@@ -68,7 +68,7 @@ while i < 40:
     j=0
     i = i+1     
 
-np.set_printoptions(threshold=1600)
+#np.set_printoptions(threshold=1600)
 #print('Csys\n ',Csys)
 
 #print('linha', Csys[0])
@@ -76,9 +76,9 @@ np.set_printoptions(threshold=1600)
 Ctot = C + Csys
 
 
-#print('Ctot\n ',Ctot)
+print('Ctot\n ',Ctot)
 
-
+'''
 Corr = np.zeros([dim,dim])
 i=0
 j=0
@@ -102,7 +102,7 @@ print('Inversa\n',Ctotinv)
 print('\n\n\n', tempao, '\n\n\n')
 
 cross = np.matmul(Ctot,Ctotinv)
-print('\n', cross)
+print('\n', cross)'''
 '''
 x = np.array(redc)    
 y = np.array(redl) 

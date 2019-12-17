@@ -2,14 +2,21 @@ import math
 import numpy as np
 import CDM 
 import matplotlib.pyplot as plt
-from decimal import Decimal
 import time
+from numpy.linalg import inv
 
 #o problema e gerar uma distribuiçao no espaço dos parametros OM_m(materia) e w(dark energy state equation) dado o modelo LCDM (usando o pacote que escrevi CDM). Os parametros sao denotados por x = [OM_m, w].
 
 #aqui defino a distribuiçao de transiçao. Pega os dois parametros, guardados no vetor x, e devolve outros dois parametros de acordo com a distribuiçao normal, centrada em cada um dos parametros iniciais:
 
-Transition = lambda x: [np.random.normal(x[0], 0.5), np.random.normal(x[1], 0.5),np.random.normal(x[2], 0.1)]
+#os passos de cada parâmetro
+pass0 = 0.05
+pass1 = 0.5
+pass2 = 0.05
+
+
+
+Transition = lambda x: [np.random.normal(x[0], pass0), np.random.normal(x[1], pass1), np.random.normal(x[2], pass2)]
 
 #Definir a distribuiçao prior para cada calor dos parametros armazenado no vetor x
     
@@ -19,7 +26,7 @@ def prior(x):
         return 0.0
     if x[1] > -1./3.:
         return 0.0
-    if abs(x[2]) > 30.:
+    if  abs(x[2]) < 18.7 or abs(x[2]) > 19.8:
         return 0.0 
 #usei prior uniforme. coloquei apenas 1.0 pq nao importa a constante de normalizaçao que deve aparecer, nao influenciara no metodo.	
     else:
@@ -27,35 +34,39 @@ def prior(x):
 
 # aqui devo defini o logaritmo da likelihood*prior
 #alem dos parmetros x, as entradas sao sig = 0.4 desvio padrao (assumindo covariancia diagonal) e dadaos representados por data1 = coluna dos redshifts e data2 = coluna das respectivas magnitude aparente.
-def LnLike(x,data1, data2, sig): 
+
+
+def LnLike(x,data1, data2, Cinv): 
     d = len(data1) 		#número de dados coletados
-    deltax = np.zeros(d)
     M = CDM.LCDModel(72., 299792.4580, 0.0, x[0], 1.0-x[0], 0.0, x[1], 0.0005) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
     i=0
     M0 = x[2]	#assumindo que todas as SNIa possuem magnitude absoluta iguais
-    Mbo = np.zeros(len(data2))	
+    Mbo = np.zeros(len(data2))
     deltaMb = np.zeros(len(data2))	
     while i < len(data2):
         Mbo[i] = data2[i] #magnitude aparente observado
         deltaMb[i] = Mbo[i] - M.Mb(data1[i], M0) #diferença entre o magnitude aparentes, observado e o teórico (dado os possíveis valores dos parâmbetros).        
         i = i+1                         
-    Qui2 = (deltaMb/sig)**2    
-    result = np.log(prior(x))-np.sum(Qui2/2.) # logaritmo da posterior ln(post) = ln(L*prior) = ln(L) + ln(prior)
+    Qui2 = np.matmul(np.matmul(deltaMb, Cinv),deltaMb)    
+    result = np.log(prior(x))-Qui2/2. # logaritmo da posterior ln(post) = ln(L*prior) = ln(L) + ln(prior)
     print(f'Ln(post) =  {result} \n')
     return result
 
 # comparar as probabilidades posterior do ponto atual e possível próximo ponto no espaço de parâmetros
-def Passo(xi,xp, data1, data2, sig, LnLike):
+def Passo(xi,xp, data1, data2, Cinv, LnLike, Lnmax):
     print('este é o xi atualmente: ',xi, '\n') 
-    LNi = LnLike(xi, data1, data2, sig) #LnLike do ponto inicial/atual xi
+    LNi = LnLike(xi, data1, data2, Cinv) #LnLike do ponto inicial/atual xi
     print('este é o xp sorteado: ',xp, '\n') 
-    LNp = LnLike(xp, data1, data2, sig) #LnLike do possível ponto posterior xp
+    LNp = LnLike(xp, data1, data2, Cinv) #LnLike do possível ponto posterior xp
     alpha = np.random.uniform(0.,1.) #sorteio uniforme de um número entre 0 e 1.
+    D = LNp-LNi
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> diferença ', D) 
     if LNp > LNi: #caso a probabilidade favorece o próximo ponto xp.
         print('Lnp > Lni \n')
+        Lnmax = LNp
         return 1 #retorna 1 caso aceito o próximo ponto xp
     else: #caso a probabilidade não favoreça xp, é necessário utilizar o sorteio de alpha.
-        r = np.exp(LNp-LNi) #razão entre posterio de xp e posterior de xi
+        r = np.exp(D) #razão entre posterio de xp e posterior de xi
         print(f'Essa é a razão: {r}            Este o alpha: {alpha}\n') 
         if alpha < r: #critério de aceite do ponto xp
             print('alpha < r \n')
@@ -63,6 +74,8 @@ def Passo(xi,xp, data1, data2, sig, LnLike):
         else:
             print('alpha > r \n')
             return 0 #recusado
+
+
     
 
 
@@ -71,40 +84,101 @@ def Passo(xi,xp, data1, data2, sig, LnLike):
 
 
 
+#______________________________________________________________________________________________________________________________________________________
 
-# Criando data1 e data2, ainda como listas vazias.
-coloumn0 = []
-coloumn1 = []
+#abrir arquivo com os dados
+f1 = open('lcparam_DS17f.txt', 'r')
+l = f1.readlines()[1:] # cada linha do arquivo é l
+error = [] #armezenar erro diagonal
+red = [] # armazenar redshift do primeiro até o ultimo
+mb = [] #armazenar as magnitude aparente
 
-#abrir o arquivo com os dados
-with open(r"DAT.txt", "r+") as f:
-    data = f.readlines() #ler linha por linha
+for line in l:
+    #print(line,'\n\n')
+    error.append(line.strip().split(" ")[5])
+    red.append(line.strip().split(" ")[1])
+    mb.append(line.strip().split(" ")[4])
 
 
-# No arquivo DAT.txt os dados estão separados em colunas. essas colunas estão separados por dois espaços. Para organizar e inserir os dados da primeira coluna na lista column0 é feito:
 
-    for line in data:
-        coloumn0.append(line.strip().split("   ")[0])
-        #strip para remover  \n
-        #split todo intervalo entre colunas
-        #second element is indexed 1
+#print('aparente \n', mb)
+print('redshift', red)
+errornp = np.array(error)
 
-#fazendo o mesmo para a segunda coluna, acrescentando seus valores em coloumn1
+Ce = np.zeros([len(errornp),len(errornp)])
 
-    for line in data:
-        coloumn1.append(line.strip().split("   ")[1])
-        
-#Transformando as listas em np.arrays
-data1 = np.zeros(len(coloumn0)) #redshift coletado
-data2 = np.zeros(len(coloumn1)) #magnitude aparente coletada
 i=0
-while i < len(coloumn0):
-    data1[i] = np.array([float(coloumn0[i])])
+while i < len(errornp):
+    Ce[i,i] = errornp[i]
+    i = i +1
+
+C = Ce**2
+print('C\n ', C)
+
+f1.close()
+
+f2 = open('syserror.txt', 'r')
+
+Csys = np.zeros([40,40])
+r = f2.readlines()
+errorsys = []
+
+for line in r:
+    errorsys.append(line.strip().split(" ")[0])
+
+
+errornpsys = np.array(errorsys)
+dimsys = len(errornpsys)
+
+
+i=0
+j=0
+while i < 40:
+    while j < 40:
+        Csys[i,j] = errornpsys[j + i*40]
+        j= j+1
+    j=0
+    i = i+1     
+
+#np.set_printoptions(threshold=1600)
+#print('Csys\n ',Csys)
+
+#print('linha', Csys[0])
+
+Ctot = C + Csys
+
+
+print('Ctot\n ',Ctot)
+
+
+inicio = time.time()
+Ctotinv = inv(Ctot)
+fimzao = time.time()
+
+tempao = fimzao - inicio
+
+print('Inversa\n',Ctotinv)
+
+print('\n\n\n', tempao, '\n\n\n')
+
+cross = np.matmul(Ctot,Ctotinv)
+print('\n', cross)
+
+#________________________________________________________________________________________________________________________________________________
+# Criando data1 e data2, ainda como listas vazias.
+
+#Transformando as listas em np.arrays
+data1 = np.zeros(len(red)) #redshift coletado
+data2 = np.zeros(len(mb)) #magnitude aparente coletada
+print(len(mb), len(red))
+i=0
+while i < len(red):
+    data1[i] = np.array([float(red[i])])
     i=i+1
 
 i=0
-while i < len(coloumn0):
-    data2[i] = np.array([float(coloumn1[i])])
+while i < len(mb):
+    data2[i] = np.array([float(mb[i])])
     i=i+1
 
 
@@ -114,7 +188,7 @@ param_init1 = float(input(print('digite um chute inicial para w: \n')))
 param_init2 = float(input(print('digite um chute inicial para M0: \n')))
 iterations = int(input(print('digite o numero de iterações: \n')))    
 
-sig = 0.4
+sig2 = Ctotinv
 
 
 
@@ -133,9 +207,10 @@ rejected = [0] #numeros de sorteios rejeitados
 
 ini = time.time()
 for i in range(iterations): #iteração i
-    print('_______________________________________________________________________________iteração ', i, '\n') #monitoramento da contagem   
+    print('_______________________________________________________________________________Faltam Iteração ', iterations - i, '\n') #monitoramento da contagem   
+    Lnmax = LnLike(xi,data1, data2, sig2)
     xp = Transition(xi) #sorteio de um novo ponto, xp, a partir do ponto atual xi
-    ret = Passo(xi,xp, data1, data2, sig, LnLike) # verificar a condição de aceite de xp. Note que assumirá valores 1 (aceite) ou 0 (recusa). 
+    ret = Passo(xi,xp, data1, data2, sig2, LnLike, Lnmax) # verificar a condição de aceite de xp. Note que assumirá valores 1 (aceite) ou 0 (recusa). 
     print('retrun do passo: ', ret, '\n')
     if ret == 1: #se for aceito
         xi = xp #atualiza o ponto atual para o ponto sorteiado xp.
@@ -161,7 +236,13 @@ for i in range(iterations): #iteração i
 
 dimension = len(chain_m)
 
-burn = int(0.2*dimension)
+
+C_m = np.array(chain_m)
+C_w = np.array(chain_w)
+C_M0 = np.array(chain_M0)
+burnin = 0.8
+burn = int(burnin*dimension)
+burnper = burnin*100.
 del chain_m[0:burn]
 del chain_w[0:burn]
 del chain_M0[0:burn]
@@ -177,8 +258,12 @@ a = cov[0,0] = sum((np.array(chain_m)-ValorMM)**2)/(n-1)
 b = cov[0,1]= cov[1,0] = sum((np.array(chain_m)-ValorMM)*(np.array(chain_w)-ValorMw))/(n-1)
 c = cov[1,1] = sum((np.array(chain_w)-ValorMw)**2)/(n-1)
 
-#d = cov[0,2] = cov[2,0] = sum((np.array(chain_m)-ValorMM)*(np.array(chain_M0)-ValorMM0))/(n-1)
-#e = cov[1,2] = cov[1,2] = sum((np.array(chain_w)-ValorMw)*(np.array(chain_M0)-ValorMM0))/(n-1)
+d = cov[0,2] = cov[2,0] = sum((np.array(chain_m)-ValorMM)*(np.array(chain_M0)-ValorMM0))/(n-1)
+e = cov[1,2] = cov[1,2] = sum((np.array(chain_w)-ValorMw)*(np.array(chain_M0)-ValorMM0))/(n-1)
+
+f = cov[2,2] = sum((np.array(chain_M0)-ValorMM0)**2)/(n-1)
+
+
 
 #definindo desvio padrão
 sigx = np.sqrt(cov[0,0])
@@ -203,17 +288,18 @@ ry2 = np.sqrt(s2*Ly)
 
 
 
-
+print(len(C_m), '\n\n\n')
+print(len(chain_m))
 
 
 fim = time.time()
 tempoT = (fim - ini)/60. 
-print(f'\n o valor esperado dos parametros sao OM_m = {ValorMM}, w = {ValorMw}, M0 = {ValorMM0} e o tempo de execução total das iterações {tempoT} min')
+print(f'\n o valor esperado dos parametros sao: \n OM_m = {ValorMM} +/- {(a)**(0.5)} \n w = {ValorMw} +/- {(c)**(0.5)} \n M0 = {ValorMM0} +/- {(f)**(0.5)}\n\n Burnin = {burnper}% \n O tempo de execução total das iterações {tempoT} min \n os parmatros iniciais foram [{param_init0}, {param_init1}, {param_init2}] \n Ln máximo {Lnmax} \n Passos [{pass0}, {pass1}, {pass2}]')
 
 #plotar os histogramas
-plt.hist(chain_m, bins = 100, label= 'Matter', color= 'blue')
-plt.hist(chain_w, bins = 100, label= 'w', color= 'red')
-plt.hist(chain_M0, bins = 100, label= 'M0', color= 'green')
+plt.hist(C_m, bins = 100, label= 'Matter', color= 'blue')
+plt.hist(C_w, bins = 100, label= 'w', color= 'red')
+plt.hist(C_M0, bins = 100, label= 'M0', color= 'green')
 plt.legend()
 plt.show()
 
@@ -226,7 +312,7 @@ plt.rcParams['legend.fontsize'] = 10
 fig = plt.figure()
 ax = fig.gca()
 plt.scatter(chain_mrej, chain_wrej, marker='x',color='y',linewidths=1) # recusados em amarelo (yellow)
-plt.scatter(chain_m, chain_w,marker='.',color='b',linewidths=3)# aceitos em azul (blue)
+plt.scatter(C_m, C_w,marker='.',color='b',linewidths=3)# aceitos em azul (blue)
 plt.scatter(ValorMM, ValorMw,marker='.',color='r',linewidths=3)# valor medio em vermelho 
 phi = np.linspace(0.0, 2*np.pi, 100)
 #elipse 95
@@ -278,6 +364,53 @@ def Passo(xi,xp, data1, data2, Cinv, LnLike):
         return 1 #retorna 1 caso aceito o próximo ponto xp
     else: #caso a probabilidade não favoreça xp, é necessário utilizar o sorteio de alpha.
         r = np.exp(Decimal(LNp))/np.exp(Decimal(LNi)) #razão entre posterio de xp e posterior de xi
+        print(f'Essa é a razão: {r}            Este o alpha: {alpha}\n') 
+        if alpha < r: #critério de aceite do ponto xp
+            print('alpha < r \n')
+            return 1 # aceito
+        else:
+            print('alpha > r \n')
+            return 0 #recusado
+
+
+
+
+
+
+
+
+
+def LnLike(x,data1, data2, sig): 
+    d = len(data1) 		#número de dados coletados
+    deltax = np.zeros(d)
+    M = CDM.LCDModel(72., 299792.4580, 0.0, x[0], 1.0-x[0], 0.0, x[1], 0.0005) #é criado uma instância do modelo LCDM, fixando constante de hubble atualmente H0 = 72, c = 299792.458km/s, OM_r = 0.
+    i=0
+    M0 = x[2]	#assumindo que todas as SNIa possuem magnitude absoluta iguais
+    Mbo = np.zeros(len(data2))	
+    deltaMb = np.zeros(len(data2))	
+    while i < len(data2):
+        Mbo[i] = data2[i] #magnitude aparente observado
+        deltaMb[i] = Mbo[i] - M.Mb(data1[i], M0) #diferença entre o magnitude aparentes, observado e o teórico (dado os possíveis valores dos parâmbetros).        
+        i = i+1                         
+    Qui2 = (deltaMb/sig)**2    
+    result = np.log(prior(x))-np.sum(Qui2/2.) # logaritmo da posterior ln(post) = ln(L*prior) = ln(L) + ln(prior)
+    print(f'Ln(post) =  {result} \n')
+    return result
+
+# comparar as probabilidades posterior do ponto atual e possível próximo ponto no espaço de parâmetros
+def Passo(xi,xp, data1, data2, sig, LnLike):
+    print('este é o xi atualmente: ',xi, '\n') 
+    LNi = LnLike(xi, data1, data2, sig) #LnLike do ponto inicial/atual xi
+    print('este é o xp sorteado: ',xp, '\n') 
+    LNp = LnLike(xp, data1, data2, sig) #LnLike do possível ponto posterior xp
+    alpha = np.random.uniform(0.,1.) #sorteio uniforme de um número entre 0 e 1.
+    D = LNp-LNi
+    print('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> diferença ', D) 
+    if LNp > LNi: #caso a probabilidade favorece o próximo ponto xp.
+        print('Lnp > Lni \n')
+        return 1 #retorna 1 caso aceito o próximo ponto xp
+    else: #caso a probabilidade não favoreça xp, é necessário utilizar o sorteio de alpha.
+        r = np.exp(D) #razão entre posterio de xp e posterior de xi
         print(f'Essa é a razão: {r}            Este o alpha: {alpha}\n') 
         if alpha < r: #critério de aceite do ponto xp
             print('alpha < r \n')

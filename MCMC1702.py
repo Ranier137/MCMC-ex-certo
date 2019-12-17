@@ -156,7 +156,7 @@ for i in range(iterations): #iteração i
 
 dimension = len(chain_m)
 print('\n\n\n',dimension,'\n\n\n')
-burn = int(0.2*dimension)
+burn = int(0.5*dimension)
 del chain_m[0:burn]
 del chain_DE[0:burn]
 n = dimension - burn
